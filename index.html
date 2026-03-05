@@ -900,7 +900,7 @@ async function startDeepResearch(force) {
       '必ず[STOCK]タグで囲むこと。説明文は不要。タグの中身だけ出力。'
     ].join('\n');
 
-    const final = await callAI(SCORE_SYS,
+    console.log('[BEFORE_FINAL]', candidates.slice(0,100)); console.log('[BEFORE_FINAL]', candidates.slice(0,100)); const final = await callAI(SCORE_SYS,
       [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
 
     console.log('[FINAL]', JSON.stringify(final)); console.log('[FINAL]', JSON.stringify(final)); feedCards = parseStocks(final);
