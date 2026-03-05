@@ -804,7 +804,7 @@ async function callAI(system, messages, maxIter = 8) {
   for (let i = 0; i < maxIter; i++) {
     let res, raw, data;
     try {
-      res = await fetch('/.netlify/functions/claude', {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
         body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:800, system, messages:msgs, tools:TOOLS })
@@ -900,8 +900,8 @@ async function startDeepResearch(force) {
     ].join('\n');
 
     const final = await callAI(SCORE_SYS,
-[{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
-                               
+      [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
+
     feedCards = parseStocks(final);
     if (feedCards.length === 0) throw new Error('銘柄カードをパースできませんでした。もう一度お試しください。');
 
