@@ -868,6 +868,7 @@ async function startDeepResearch(force) {
       [{ role: 'user', content: '以下5銘柄の①PER/PBR/配当②25日線・RSI・トレンドを各2行以内で。\n' + candidates }]);
     log += '\n【分析】\n' + analysis;
 
+    await new Promise(r => setTimeout(r, 15000));
     // STEP 4: Today reason + Scoring combined
     await new Promise(r => setTimeout(r, 15000));
     setStep('scoring');
