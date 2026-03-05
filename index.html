@@ -855,21 +855,21 @@ async function startDeepResearch(force) {
     log += '\n【マクロ・セクター】\n' + macro;
 
     // STEP 2: Screening
-    await new Promise(r => setTimeout(r, 4000));
+    await new Promise(r => setTimeout(r, 8000));
     setStep('screener');
     const candidates = await callAI('日本株スクリーナー。',
       [{ role: 'user', content: '直近決算増益・業績上向・PER適正の条件で5銘柄。銘柄コード・企業名・一言理由のみ。\n' + macro }]);
     log += '\n【候補】\n' + candidates;
 
     // STEP 3: Funda + Technical combined
-    await new Promise(r => setTimeout(r, 4000));
+    await new Promise(r => setTimeout(r, 8000));
     setStep('funda');
     const analysis = await callAI('日本株アナリスト。ファンダ・テクニカル両方を簡潔に。',
       [{ role: 'user', content: '以下5銘柄の①PER/PBR/配当②25日線・RSI・トレンドを各2行以内で。\n' + candidates }]);
     log += '\n【分析】\n' + analysis;
 
     // STEP 4: Today reason + Scoring combined
-    await new Promise(r => setTimeout(r, 4000));
+    await new Promise(r => setTimeout(r, 8000));
     setStep('scoring');
     const SCORE_SYS = [
       '日本株最終選定AI。以下のフォーマットで必ず出力すること。',
