@@ -804,10 +804,10 @@ async function callAI(system, messages, maxIter = 8) {
   for (let i = 0; i < maxIter; i++) {
     let res, raw, data;
     try {
-      res = await fetch('/.netlify/functions/claude', {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system, messages:msgs, tools:TOOLS })
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, system, messages:msgs, tools:TOOLS })
       });
       raw = await res.text();
       data = JSON.parse(raw);
@@ -848,61 +848,32 @@ async function startDeepResearch(force) {
   let log = '';
 
   try {
-    // STEP 1
+    // STEP 1: Market + Sectors combined
     setStep('market');
-    const macro = await callAI('日本株市場リサーチャー。要点のみ簡潔に。',
-      [{ role: 'user', content: dateStr + 'の日本株市場状況。日経・TOPIX・為替・金利・主要ニュースを200字で要約。' }]);
-    log += '\n【マクロ】\n' + macro;
+    const macro = await callAI('日本株市場・セクターアナリスト。簡潔に。',
+      [{ role: 'user', content: dateStr + 'の日本株市場。①日経/TOPIX/為替を100字で②注目セクター3つと各2銘柄候補をリスト形式で。' }]);
+    log += '\n【マクロ・セクター】\n' + macro;
 
-    // STEP 2
-    setStep('sectors');
-    const sectors = await callAI('日本株セクターアナリスト。',
-      [{ role: 'user', content: dateStr + '時点で最注目セクター3つと各2銘柄候補を挙げて。成長株・割安株重視。\n' + log }]);
-    log += '\n【セクター】\n' + sectors;
-
-    // STEP 3
+    // STEP 2: Screening
     setStep('screener');
     const candidates = await callAI('日本株スクリーナー。',
-      [{ role: 'user', content: '直近決算増益/上方修正・業績上向・PER適正・成長or割安の条件で8銘柄スクリーニング。銘柄コードと企業名と一言理由を列挙。\n' + log }]);
+      [{ role: 'user', content: '直近決算増益・業績上向・PER適正の条件で5銘柄。銘柄コード・企業名・一言理由のみ。\n' + macro }]);
     log += '\n【候補】\n' + candidates;
 
-    // STEP 4
+    // STEP 3: Funda + Technical combined
     setStep('funda');
-    const funda = await callAI('日本株財務アナリスト。',
-      [{ role: 'user', content: '以下候補の最新決算・EPS成長率・PER・PBR・配当利回り・純現金・時価総額を調査。\n' + candidates }]);
-    log += '\n【ファンダ】\n' + funda;
+    const analysis = await callAI('日本株アナリスト。ファンダ・テクニカル両方を簡潔に。',
+      [{ role: 'user', content: '以下5銘柄の①PER/PBR/配当②25日線・RSI・トレンドを各2行以内で。\n' + candidates }]);
+    log += '\n【分析】\n' + analysis;
 
-    // STEP 5
-    setStep('technical');
-    const tech = await callAI('日本株テクニカルアナリスト。',
-      [{ role: 'user', content: '以下候補の25日線・75日線・RSI・出来高・高値更新・BBを調査。\n' + candidates }]);
-    log += '\n【テクニカル】\n' + tech;
-
-    // STEP 6
-    setStep('today');
-    const todayReason = await callAI('日本株モメンタムアナリスト。',
-      [{ role: 'user', content: '以下の候補銘柄それぞれについて「なぜ今日なのか」を調査。昨日と比べて何が変わったか：新しいニュース・決算・アナリスト格上げ・出来高急増・需給変化など。各銘柄1〜2文で。\n' + candidates + '\n\n市場背景:\n' + macro }]);
-    log += '\n【今日の理由】\n' + todayReason;
-
-    // STEP 7
-    setStep('prices');
-    const prices = await callAI('日本株価格データ取得AI。株探・Yahoo Finance・Kabutan等から最新株価を取得する。',
-      [{ role: 'user', content: '以下の銘柄の本日の株価（現在値・前日比・出来高）をWeb検索で正確に報告してください。\n' + candidates }]);
-    log += '\n【リアルタイム株価】\n' + prices;
-
-    // STEP 8
+    // STEP 4: Today reason + Scoring combined
     setStep('scoring');
     const SCORE_SYS = [
-      '日本株最終選定AI。リサーチ結果を基にスコアリングして推薦。',
+      '日本株最終選定AI。スコアリングして推薦。',
+      'スコア100点: ファンダ50点+テクニカル50点。70点未満除外。RR2:1未満除外。最終3銘柄。',
+      '重要：株価はWeb検索で取得した実際の値を使うこと。',
       '',
-      'スコアリング（100点満点）:',
-      'ファンダ50点: 決算増益/上方修正(10)・業績上向(10)・PER適正(10)・PBR割安(5)・配当(5)・純現金+(5)・中小型(5)',
-      'テクニカル50点: 25日線>75日線(10)・株価>25日線(10)・RSI適正(10)・出来高増加(10)・高値更新(10)・BB+2σ(10)',
-      '70点未満除外。RR比2:1未満除外。最終3〜5銘柄。',
-      '',
-      '重要：株価・変動率は必ずWeb検索で取得した実際の値を使うこと。架空の値は絶対に使わない。',
-      '',
-      '出力フォーマット（厳守・前置き不要）:',
+      '出力フォーマット（厳守）:',
       '[STOCK]',
       'code: 7203',
       'name: トヨタ自動車',
@@ -916,14 +887,14 @@ async function startDeepResearch(force) {
       'sl: ¥2,964（-5.0%）',
       'sl_low: ¥3,010（直近安値）',
       'rr: 3.0',
-      'today_reason: ★今日である理由：本日発表があり出来高が前日比2倍に急増。',
-      'reason: 総合的な推薦理由100字以内',
-      'tags: 自動車,EV,割安,上昇トレンド',
+      'today_reason: ★今日の理由：本日出来高急増。',
+      'reason: 推薦理由50字以内',
+      'tags: 自動車,割安',
       '[/STOCK]'
     ].join('\n');
 
     const final = await callAI(SCORE_SYS,
-      [{ role: 'user', content: '以下のリサーチ結果を基に最終選定してください。\n' + log }]);
+      [{ role: 'user', content: '以下を基に最終選定。\n' + log }]);
 
     feedCards = parseStocks(final);
     if (feedCards.length === 0) throw new Error('銘柄カードをパースできませんでした。もう一度お試しください。');
