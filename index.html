@@ -923,7 +923,7 @@ async function startDeepResearch(force) {
 }
 
 function parseStocks(text) {
-  const cards = [], re = /\[STOCK\]([\s\S]*?)\[\/STOCK\]/g;
+  const cards = [], re = /\[STOCK\]([\s\S]*?)(?:\[\/STOCK\]|$)/g;
   let m;
   while ((m = re.exec(text)) !== null) {
     const p = {};
