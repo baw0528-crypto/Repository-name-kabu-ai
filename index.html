@@ -872,11 +872,12 @@ async function startDeepResearch(force) {
     await new Promise(r => setTimeout(r, 4000));
     setStep('scoring');
     const SCORE_SYS = [
-      '日本株最終選定AI。スコアリングして推薦。',
-      'スコア100点: ファンダ50点+テクニカル50点。70点未満除外。RR2:1未満除外。最終3銘柄。',
-      '重要：株価はWeb検索で取得した実際の値を使うこと。',
+      '日本株最終選定AI。以下のフォーマットで必ず出力すること。',
+      '絶対に[STOCK]と[/STOCK]タグを使うこと。他の形式は不可。',
+      'スコア100点: ファンダ50点+テクニカル50点。70点未満除外。RR2:1未満除外。最終2〜3銘柄。',
+      '株価はWeb検索で取得した実際の値を使うこと。',
       '',
-      '出力フォーマット（厳守）:',
+      '必須出力フォーマット（このまま使うこと）:',
       '[STOCK]',
       'code: 7203',
       'name: トヨタ自動車',
@@ -888,12 +889,14 @@ async function startDeepResearch(force) {
       'score_t: 42',
       'tp: ¥3,590（+15.1%）',
       'sl: ¥2,964（-5.0%）',
-      'sl_low: ¥3,010（直近安値）',
+      'sl_low: ¥3,010',
       'rr: 3.0',
-      'today_reason: ★今日の理由：本日出来高急増。',
+      'today_reason: 本日出来高急増。',
       'reason: 推薦理由50字以内',
       'tags: 自動車,割安',
-      '[/STOCK]'
+      '[/STOCK]',
+      '',
+      '必ず[STOCK]タグで囲むこと。説明文は不要。タグの中身だけ出力。'
     ].join('\n');
 
     const final = await callAI(SCORE_SYS,
