@@ -903,7 +903,7 @@ async function startDeepResearch(force) {
     const final = await callAI(SCORE_SYS,
       [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
 
-    console.log('[FINAL]', final); console.log('[FINAL]', final); feedCards = parseStocks(final);
+    console.log('[FINAL]', JSON.stringify(final)); console.log('[FINAL]', JSON.stringify(final)); feedCards = parseStocks(final);
     if (feedCards.length === 0) throw new Error('銘柄カードをパースできませんでした。もう一度お試しください。');
 
     await sSet(cacheKey, feedCards);
