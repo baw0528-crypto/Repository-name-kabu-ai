@@ -807,7 +807,7 @@ async function callAI(system, messages, maxIter = 8) {
     try {
       res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:800, system, messages:msgs, tools:TOOLS })
       });
       raw = await res.text();
