@@ -640,6 +640,7 @@ body::before{
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:10px;">データ管理</div>
+        <button onclick="resetApiKey()" style="width:100%;padding:9px;border:1px solid rgba(255,255,255,0.13);border-radius:8px;background:none;color:#9BA3C9;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:8px;">🔑 APIキーを変更</button>
         <button onclick="clearAllData()" style="width:100%;padding:9px;border:1.5px solid var(--red-l);border-radius:var(--r-xs);background:none;color:var(--red);font-size:13px;cursor:pointer;font-family:'DM Sans','Noto Sans JP',sans-serif;">全データをリセット</button>
       </div>
       <div style="font-size:11px;color:var(--text3);line-height:1.7;padding:0 2px;">
@@ -804,10 +805,10 @@ async function callAI(system, messages, maxIter = 8) {
   for (let i = 0; i < maxIter; i++) {
     let res, raw, data;
     try {
-      res = await fetch('/api/claude', {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
-        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1000, system, messages:msgs, tools:TOOLS })
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:800, system, messages:msgs, tools:TOOLS })
       });
       raw = await res.text();
       data = JSON.parse(raw);
@@ -855,22 +856,21 @@ async function startDeepResearch(force) {
     log += '\n【マクロ・セクター】\n' + macro;
 
     // STEP 2: Screening
-    await new Promise(r => setTimeout(r, 20000));
+    await new Promise(r => setTimeout(r, 4000));
     setStep('screener');
     const candidates = await callAI('日本株スクリーナー。',
       [{ role: 'user', content: '直近決算増益・業績上向・PER適正の条件で5銘柄。銘柄コード・企業名・一言理由のみ。\n' + macro }]);
     log += '\n【候補】\n' + candidates;
 
     // STEP 3: Funda + Technical combined
-    await new Promise(r => setTimeout(r, 20000));
+    await new Promise(r => setTimeout(r, 4000));
     setStep('funda');
     const analysis = await callAI('日本株アナリスト。ファンダ・テクニカル両方を簡潔に。',
       [{ role: 'user', content: '以下5銘柄の①PER/PBR/配当②25日線・RSI・トレンドを各2行以内で。\n' + candidates }]);
     log += '\n【分析】\n' + analysis;
 
-    await new Promise(r => setTimeout(r, 20000));
     // STEP 4: Today reason + Scoring combined
-    await new Promise(r => setTimeout(r, 20000));
+    await new Promise(r => setTimeout(r, 4000));
     setStep('scoring');
     const SCORE_SYS = [
       '日本株最終選定AI。以下のフォーマットで必ず出力すること。',
@@ -901,8 +901,7 @@ async function startDeepResearch(force) {
     ].join('\n');
 
     const final = await callAI(SCORE_SYS,
-      [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。質問禁止。即座に[STOCK]タグで出力すること。\n' + candidates },
-       { role: 'assistant', content: '[STOCK]\ncode:' }]);
+      [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
 
     feedCards = parseStocks(final);
     if (feedCards.length === 0) throw new Error('銘柄カードをパースできませんでした。もう一度お試しください。');
@@ -922,14 +921,13 @@ async function startDeepResearch(force) {
       + '</div>';
   }
 }
+
 function parseStocks(text) {
-  const cards = [], re = /\[STOCK\]([\s\S]*?)(?:\[\/STOCK\]|$)/g;
+  const cards = [], re = /\[STOCK\]([\s\S]*?)\[\/STOCK\]/g;
   let m;
   while ((m = re.exec(text)) !== null) {
-    const block = m[1].trim();
-    if (!block) continue;
     const p = {};
-    block.split('\n').forEach(l => {
+    m[1].trim().split('\n').forEach(l => {
       const i = l.indexOf(':'); if (i > -1) p[l.slice(0,i).trim()] = l.slice(i+1).trim();
     });
     if (p.code && p.name) cards.push(p);
