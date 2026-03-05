@@ -901,7 +901,8 @@ async function startDeepResearch(force) {
     ].join('\n');
 
     const final = await callAI(SCORE_SYS,
-      [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。\n' + candidates }]);
+      [{ role: 'user', content: '以下の候補銘柄から最終選定して[STOCK]タグで出力せよ。質問禁止。即座に[STOCK]タグで出力すること。\n' + candidates },
+       { role: 'assistant', content: '[STOCK]\ncode:' }]);
 
     feedCards = parseStocks(final);
     if (feedCards.length === 0) throw new Error('銘柄カードをパースできませんでした。もう一度お試しください。');
